@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
+import { WA_TEMPLATES } from "./lib/whatsapp-templates";
 
 type FontSize = "xxs" | "xs" | "sm" | "md" | "lg" | "xl" | "xxl" | "3xl" | "4xl" | "5xl";
 type ButtonStyle = "primary" | "secondary" | "link";
@@ -402,6 +403,10 @@ function TemplateCatalog({ onOpenLineCarousel, account }: { onOpenLineCarousel: 
             <p>建立可公開開啟的卡片連結，透過 WhatsApp 分享時由平台讀取真實網頁預覽。</p>
           </div>
           <div className="whatsapp-template-grid">
+            {WA_TEMPLATES.filter(t => t.id !== "basic").map(template => <article key={template.id} className="template-card whatsapp-template-card">
+              <div className="whatsapp-feature-preview" aria-hidden="true"><span className="whatsapp-feature-mark">WA</span><span className="whatsapp-feature-caption">{template.name}</span></div>
+              <div className="template-card-body"><span className="whatsapp-free-label">免费生成 · 不扣额度</span><h2>{template.name}</h2><p>{template.heading}。支持独立分享图片、背景图、私聊、群聊及官网按钮。</p><a className="whatsapp-create-link" href={`/whatsapp?template=${template.id}`}>使用这个模板</a></div>
+            </article>)}
             <article className="template-card whatsapp-template-card">
               <div className="whatsapp-feature-preview" aria-hidden="true">
                 <span className="whatsapp-feature-mark">WA</span>

@@ -1,6 +1,7 @@
 import { database } from "../../lib/auth";
+import { landingMarkup, WA_TEMPLATES, type LandingFields } from "../../lib/whatsapp-templates";
 
-type ShareCard = {
+type ShareCard = LandingFields & {
   title: string;
   description: string;
   imageUrl: string;
@@ -54,7 +55,19 @@ export function decodeCard(value: string, pageRequestUrl: string): ShareCard {
     throw new Error("卡片圖片必須是公開的 HTTPS 圖片網址。");
   }
 
-  return { title, description, imageUrl: image.href, phone, message };
+  const fields: LandingFields = {};
+  for (const key of ["heading", "pageDescription", "badge", "features", "siteName", "chatLabel", "groupLabel", "siteLabel", "accentText"] as const) {
+    if (typeof raw[key] === "string") fields[key] = raw[key].slice(0, key === "features" ? 1000 : 240);
+  }
+  fields.templateId = WA_TEMPLATES.some(t => t.id === raw.templateId) ? String(raw.templateId) : "basic";
+  for (const key of ["backgroundUrl", "groupUrl", "siteUrl"] as const) {
+    if (!raw[key]) continue;
+    const value = new URL(String(raw[key]));
+    if (value.protocol !== "https:" || value.username || value.password || value.href.length > 2000) throw new Error("背景、群聊與官網必須使用有效的 HTTPS 網址");
+    if (key === "groupUrl" && value.hostname !== "chat.whatsapp.com") throw new Error("群聊網址必須來自 chat.whatsapp.com");
+    fields[key] = value.href;
+  }
+  return { ...fields, title, description, imageUrl: image.href, phone, message };
 }
 
 function htmlResponse(content: string, status = 200) {
@@ -101,6 +114,8 @@ export async function GET(request: Request) {
   const imageUrl = escapeHtml(card.imageUrl);
   const contactUrl = `https://wa.me/${card.phone}?text=${encodeURIComponent(card.message)}`;
   const shareUrl = `https://wa.me/?text=${encodeURIComponent(pageUrl)}`;
+  const landing = landingMarkup(card, contactUrl);
+  if (landing) return htmlResponse(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><meta name="description" content="${description}"><link rel="canonical" href="${escapeHtml(pageUrl)}"><meta property="og:type" content="website"><meta property="og:url" content="${escapeHtml(pageUrl)}"><meta property="og:site_name" content="${escapeHtml(card.siteName || "WhatsApp 卡片")}"><meta property="og:title" content="${title}"><meta property="og:description" content="${description}"><meta property="og:image" content="${imageUrl}"><meta property="og:image:secure_url" content="${imageUrl}"><meta property="og:image:alt" content="${title}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${description}"><meta name="twitter:image" content="${imageUrl}"><style>${landing.css}</style></head><body>${landing.body}</body></html>`);
 
   return htmlResponse(`<!doctype html>
 <html lang="zh-Hant">

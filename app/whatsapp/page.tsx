@@ -1,8 +1,9 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { WA_TEMPLATES, landingMarkup, type LandingFields } from "../lib/whatsapp-templates";
 
-type WhatsAppCard = {
+type WhatsAppCard = LandingFields & {
   title: string;
   description: string;
   imageUrl: string;
@@ -56,6 +57,10 @@ export default function WhatsAppCardBuilder() {
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [generating, setGenerating] = useState(false);
+  useEffect(() => {
+    const template = WA_TEMPLATES.find(t => t.id === new URLSearchParams(window.location.search).get("template"));
+    if (template) setCard(current => ({...current,templateId:template.id,heading:template.heading,pageDescription:template.pageDescription,badge:template.badge,features:template.features,chatLabel:template.chatLabel,groupLabel:template.groupLabel}));
+  }, []);
 
   const updateCard = <K extends keyof WhatsAppCard>(key: K, value: WhatsAppCard[K]) => {
     setCard((current) => ({ ...current, [key]: value }));
@@ -64,7 +69,7 @@ export default function WhatsAppCardBuilder() {
     setNotice("");
   };
 
-  const uploadImage = async (event: ChangeEvent<HTMLInputElement>) => {
+  const uploadImage = async (event: ChangeEvent<HTMLInputElement>, target: "imageUrl" | "backgroundUrl" = "imageUrl") => {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
@@ -86,7 +91,7 @@ export default function WhatsAppCardBuilder() {
       const response = await fetch("/api/images", { method: "POST", body: formData });
       const result = await response.json() as { url?: string; error?: string };
       if (!response.ok || !result.url) throw new Error(result.error || "圖片上傳失敗");
-      updateCard("imageUrl", result.url);
+      updateCard(target, result.url);
       setNotice("圖片已上傳");
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "圖片上傳失敗");
@@ -175,6 +180,24 @@ export default function WhatsAppCardBuilder() {
 
         <div className="whatsapp-builder-layout">
           <form className="whatsapp-form-panel" onSubmit={generateCard}>
+            <label><span>选择模板（5 种）</span><select value={card.templateId || "basic"} onChange={event => {
+              const template = WA_TEMPLATES.find(t => t.id === event.target.value)!;
+              setCard(current => ({...current, templateId: template.id, heading: template.heading, pageDescription: template.pageDescription, badge: template.badge, features: template.features, chatLabel: template.chatLabel, groupLabel: template.groupLabel}));
+              setShareUrl(""); setCopied(false);
+            }}>{WA_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+            {card.templateId && card.templateId !== "basic" && <>
+              <label><span>网页标题</span><input value={card.heading || ""} maxLength={240} onChange={e => updateCard("heading", e.target.value)} /></label>
+              <label><span>网页介绍</span><textarea value={card.pageDescription || ""} maxLength={240} onChange={e => updateCard("pageDescription", e.target.value)} /></label>
+              <label><span>标签文字</span><input value={card.badge || ""} maxLength={80} onChange={e => updateCard("badge", e.target.value)} /></label>
+              {card.templateId === "4" && <label><span>强调文字</span><input value={card.accentText ?? "名额有限"} maxLength={80} onChange={e => updateCard("accentText", e.target.value)} /></label>}
+              <label><span>特色列表（每行一项）</span><textarea value={card.features || ""} maxLength={1000} onChange={e => updateCard("features", e.target.value)} /></label>
+              <label><span>网页背景图（独立于分享图片）</span><input type="url" value={card.backgroundUrl || ""} onChange={e => updateCard("backgroundUrl", e.target.value)} placeholder="https://…" /></label>
+              <label><span>上传背景图</span><input type="file" accept="image/*" disabled={uploading} onChange={e => uploadImage(e,"backgroundUrl")} /></label>
+              <label><span>WhatsApp 群聊链接（可选）</span><input type="url" value={card.groupUrl || ""} onChange={e => updateCard("groupUrl", e.target.value)} placeholder="https://chat.whatsapp.com/…" /></label>
+              <label><span>官方网站（可选）</span><input type="url" value={card.siteUrl || ""} onChange={e => updateCard("siteUrl", e.target.value)} placeholder="https://…" /></label>
+              <label><span>站点名称</span><input value={card.siteName || ""} maxLength={80} onChange={e => updateCard("siteName", e.target.value)} /></label>
+              {(["chatLabel", "groupLabel", "siteLabel"] as const).map((key,index) => <label key={key}><span>{["私聊按钮文字","群聊按钮文字","官网按钮文字"][index]}</span><input value={card[key] || ""} maxLength={80} onChange={e => updateCard(key,e.target.value)} /></label>)}
+            </>}
             <label>
               <span>卡片標題</span>
               <input value={card.title} maxLength={80} required placeholder="例如：林小姐｜手作甜點" onChange={(event) => updateCard("title", event.target.value)} />
@@ -217,6 +240,10 @@ export default function WhatsAppCardBuilder() {
               <div><small>PREVIEW</small><h2>卡片內容預覽</h2></div>
               <span>公開分享頁</span>
             </div>
+            {card.templateId && card.templateId !== "basic" && (() => {
+              const preview = landingMarkup(card, `https://wa.me/${card.phone.replace(/\D/g, "")}`);
+              return preview ? <iframe title="模板落地页预览" sandbox="" style={{width:"100%",height:650,border:0,borderRadius:16}} srcDoc={`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${preview.css}</style></head><body>${preview.body}</body></html>`} /> : null;
+            })()}
             <article className="whatsapp-live-card">
               {card.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
