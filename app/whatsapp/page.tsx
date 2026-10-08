@@ -9,6 +9,8 @@ type WhatsAppCard = LandingFields & {
   imageUrl: string;
   phone: string;
   message: string;
+  imageWidth?: number;
+  imageHeight?: number;
 };
 
 const INITIAL_CARD: WhatsAppCard = {
@@ -28,13 +30,13 @@ function encodeCard(value: WhatsAppCard) {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-async function prepareUpload(file: File) {
+async function prepareUpload(file: File, shareImage = false) {
   const bitmap = await createImageBitmap(file);
   const maxSide = 1200;
   const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.width = shareImage ? 1200 : Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = shareImage ? 630 : Math.max(1, Math.round(bitmap.height * scale));
   const context = canvas.getContext("2d");
   if (!context) {
     bitmap.close();
@@ -42,10 +44,19 @@ async function prepareUpload(file: File) {
   }
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, canvas.width, canvas.height);
-  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  if (shareImage) {
+    const ratio = Math.min(canvas.width / bitmap.width, canvas.height / bitmap.height);
+    const width = Math.round(bitmap.width * ratio), height = Math.round(bitmap.height * ratio);
+    context.drawImage(bitmap, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+  } else context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.86));
+  let blob: Blob | null = null;
+  for (const quality of [0.86,0.72,0.58,0.44]) {
+    blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve,"image/jpeg",quality));
+    if (!shareImage || (blob && blob.size <= 300 * 1024)) break;
+  }
   if (!blob) throw new Error("圖片處理失敗");
+  if (shareImage && blob.size > 300 * 1024) throw new Error("圖片細節過多，請選擇較簡單的分享圖片");
   return blob;
 }
 
@@ -85,7 +96,7 @@ export default function WhatsAppCardBuilder() {
     setUploading(true);
     setError("");
     try {
-      const image = await prepareUpload(file);
+      const image = await prepareUpload(file, target === "imageUrl");
       const formData = new FormData();
       formData.append("file", image, "whatsapp-card.jpg");
       const response = await fetch("/api/images", { method: "POST", body: formData });
@@ -125,11 +136,23 @@ export default function WhatsAppCardBuilder() {
       && parsedImage.host === window.location.host;
     if (parsedImage.protocol !== "https:" && !localImageAllowed) return setError("圖片網址必須使用 HTTPS，WhatsApp 才能讀取分享預覽");
 
-    const payload = encodeCard({ ...card, title, description, imageUrl: parsedImage.href, phone });
     if (generating) return;
     setGenerating(true);
     setShareUrl("");
     try {
+      const imageResponse = await fetch(parsedImage.href, {mode: "cors", signal: AbortSignal.timeout(15000)});
+      if (!imageResponse.ok) throw new Error("圖片網址無法讀取，請改用有效圖片網址或上傳圖片");
+      const imageBlob = await imageResponse.blob();
+      if (!imageBlob.type.startsWith("image/") || imageBlob.size > 10 * 1024 * 1024) throw new Error("圖片網址必須直接提供 10MB 以內的圖片");
+      const normalized = await prepareUpload(new File([imageBlob], "source-image", {type:imageBlob.type}), true);
+      const imageForm = new FormData();
+      imageForm.append("file", normalized, "whatsapp-preview.jpg");
+      const uploadResponse = await fetch("/api/images", {method:"POST",body:imageForm});
+      const upload = await uploadResponse.json() as {url?:string;error?:string};
+      if (!uploadResponse.ok || !upload.url) throw new Error(upload.error || "分享圖片儲存失敗");
+      const hostedImage = new URL(upload.url);
+      if (!["localhost","127.0.0.1"].includes(window.location.hostname)) hostedImage.host = "linkasmnd.it.com";
+      const payload = encodeCard({ ...card, title, description, imageUrl: hostedImage.href, phone, imageWidth:1200, imageHeight:630 });
       const response = await fetch("/api/whatsapp/cards", {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({card: payload}),
@@ -140,7 +163,7 @@ export default function WhatsAppCardBuilder() {
       setCopied(false);
       setNotice("卡片已儲存。貼到 WhatsApp 後，請等圖片預覽出現再傳送。");
     } catch (error) {
-      setError(error instanceof Error ? error.message : "卡片儲存失敗");
+      setError(error instanceof TypeError ? "圖片網站不允許瀏覽器讀取。請下載原圖後上傳，再生成卡片。" : error instanceof Error ? error.message : "卡片儲存失敗");
     } finally {
       setGenerating(false);
     }

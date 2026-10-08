@@ -7,6 +7,8 @@ type ShareCard = LandingFields & {
   imageUrl: string;
   phone: string;
   message: string;
+  imageWidth?: number;
+  imageHeight?: number;
 };
 
 function escapeHtml(value: string) {
@@ -67,7 +69,8 @@ export function decodeCard(value: string, pageRequestUrl: string): ShareCard {
     if (key === "groupUrl" && value.hostname !== "chat.whatsapp.com") throw new Error("群聊網址必須來自 chat.whatsapp.com");
     fields[key] = value.href;
   }
-  return { ...fields, title, description, imageUrl: image.href, phone, message };
+  const dimensions = raw.imageWidth === 1200 && raw.imageHeight === 630 ? {imageWidth:1200,imageHeight:630} : {};
+  return { ...fields, ...dimensions, title, description, imageUrl: image.href, phone, message };
 }
 
 function htmlResponse(content: string, status = 200) {
@@ -112,10 +115,11 @@ export async function GET(request: Request) {
   const title = escapeHtml(card.title);
   const description = escapeHtml(card.description);
   const imageUrl = escapeHtml(card.imageUrl);
+  const imageMetadata = card.imageWidth ? '<meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' : "";
   const contactUrl = `https://wa.me/${card.phone}?text=${encodeURIComponent(card.message)}`;
   const shareUrl = `https://wa.me/?text=${encodeURIComponent(pageUrl)}`;
   const landing = landingMarkup(card, contactUrl);
-  if (landing) return htmlResponse(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><meta name="description" content="${description}"><link rel="canonical" href="${escapeHtml(pageUrl)}"><meta property="og:type" content="website"><meta property="og:url" content="${escapeHtml(pageUrl)}"><meta property="og:site_name" content="${escapeHtml(card.siteName || "WhatsApp 卡片")}"><meta property="og:title" content="${title}"><meta property="og:description" content="${description}"><meta property="og:image" content="${imageUrl}"><meta property="og:image:secure_url" content="${imageUrl}"><meta property="og:image:alt" content="${title}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${description}"><meta name="twitter:image" content="${imageUrl}"><style>${landing.css}</style></head><body>${landing.body}</body></html>`);
+  if (landing) return htmlResponse(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><meta name="description" content="${description}"><link rel="canonical" href="${escapeHtml(pageUrl)}"><meta property="og:type" content="website"><meta property="og:url" content="${escapeHtml(pageUrl)}"><meta property="og:site_name" content="${escapeHtml(card.siteName || "WhatsApp 卡片")}"><meta property="og:title" content="${title}"><meta property="og:description" content="${description}"><meta property="og:image" content="${imageUrl}"><meta property="og:image:secure_url" content="${imageUrl}"><meta property="og:image:alt" content="${title}">${imageMetadata}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${title}"><meta name="twitter:description" content="${description}"><meta name="twitter:image" content="${imageUrl}"><style>${landing.css}</style></head><body>${landing.body}</body></html>`);
 
   return htmlResponse(`<!doctype html>
 <html lang="zh-Hant">
@@ -132,6 +136,7 @@ export async function GET(request: Request) {
   <meta property="og:image" content="${imageUrl}">
   <meta property="og:image:secure_url" content="${imageUrl}">
   <meta property="og:image:alt" content="${title}">
+  ${imageMetadata}
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${title}">
   <meta name="twitter:description" content="${description}">
@@ -150,3 +155,4 @@ export async function GET(request: Request) {
   <main><article class="card"><img class="hero" src="${imageUrl}" alt="${title}" fetchpriority="high"><div class="content"><p class="eyebrow">WHATSAPP SHARE CARD</p><h1>${title}</h1><p>${description}</p><div class="actions"><a class="contact" href="${escapeHtml(contactUrl)}" target="_blank" rel="noopener noreferrer">在 WhatsApp 聯絡</a><a href="${escapeHtml(shareUrl)}" target="_blank" rel="noopener noreferrer">分享到 WhatsApp</a></div></div></article><p class="foot">這是一張公開分享卡片。透過 WhatsApp 傳送連結時，預覽由本頁的 Open Graph 資料產生。</p></main>
 </body></html>`);
 }
+
