@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://line-card-lab.cx931774.workers.dev"),
+  metadataBase: new URL("https://linkasmnd.it.com"),
   title: "社交卡片生成器｜LINE 與 WhatsApp 卡片",
   description: "分類製作 LINE 卡片與 WhatsApp 分享卡，建立可公開預覽的分享連結。",
   keywords: ["LINE 卡片", "LINE 卡片生成器", "LINE Flex Message", "WhatsApp 卡片", "WhatsApp 分享卡"],
