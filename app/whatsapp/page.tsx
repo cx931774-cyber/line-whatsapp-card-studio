@@ -157,7 +157,10 @@ export default function WhatsAppCardBuilder() {
       if (!uploadResponse.ok || !upload.url) throw new Error(upload.error || "分享圖片儲存失敗");
       const hostedImage = new URL(upload.url);
       if (!["localhost","127.0.0.1"].includes(window.location.hostname)) hostedImage.host = "linkasmnd.it.com";
-      const payload = encodeCard({ ...card, title, description, imageUrl: hostedImage.href, phone, imageWidth:1200, imageHeight:630 });
+      const payload = encodeCard({ ...card, title, description, imageUrl: hostedImage.href, phone, imageWidth:1200, imageHeight:630,
+        groupUrl:card.showGroup ? card.groupUrl : undefined,
+        siteUrl:card.showSite ? card.siteUrl : undefined,
+      });
       const response = await fetch("/api/whatsapp/cards", {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({card: payload}),
@@ -219,15 +222,15 @@ export default function WhatsAppCardBuilder() {
               </fieldset>
               <label><span>网页标题</span><input value={card.heading || ""} maxLength={240} onChange={e => updateCard("heading", e.target.value)} /></label>
               <label><span>网页介绍</span><textarea value={card.pageDescription || ""} maxLength={240} onChange={e => updateCard("pageDescription", e.target.value)} /></label>
-              <label><span>标签文字</span><input value={card.badge || ""} maxLength={80} onChange={e => updateCard("badge", e.target.value)} /></label>
+              {["3", "4", "5"].includes(card.templateId) && <label><span>标签文字</span><input value={card.badge || ""} maxLength={80} onChange={e => updateCard("badge", e.target.value)} /></label>}
               {card.templateId === "4" && <label><span>强调文字</span><input value={card.accentText ?? "名额有限"} maxLength={80} onChange={e => updateCard("accentText", e.target.value)} /></label>}
-              <label><span>特色列表（每行一项）</span><textarea value={card.features || ""} maxLength={1000} onChange={e => updateCard("features", e.target.value)} /></label>
+              {["3", "5"].includes(card.templateId) && <label><span>特色列表（每行一项）</span><textarea value={card.features || ""} maxLength={1000} onChange={e => updateCard("features", e.target.value)} /></label>}
               <label><span>网页背景图（独立于分享图片）</span><input type="url" value={card.backgroundUrl || ""} onChange={e => updateCard("backgroundUrl", e.target.value)} placeholder="https://…" /></label>
               <label><span>上传背景图</span><input type="file" accept="image/*" disabled={uploading} onChange={e => uploadImage(e,"backgroundUrl")} /></label>
-              <label><span>WhatsApp 群聊链接（可选）</span><input type="url" value={card.groupUrl || ""} onChange={e => updateCard("groupUrl", e.target.value)} placeholder="https://chat.whatsapp.com/…" /></label>
-              <label><span>官方网站（可选）</span><input type="url" value={card.siteUrl || ""} onChange={e => updateCard("siteUrl", e.target.value)} placeholder="https://…" /></label>
+              {card.showGroup && <label><span>WhatsApp 群聊链接</span><input type="url" value={card.groupUrl || ""} onChange={e => updateCard("groupUrl", e.target.value)} placeholder="https://chat.whatsapp.com/…" required /></label>}
+              {card.showSite && <label><span>官方网站</span><input type="url" value={card.siteUrl || ""} onChange={e => updateCard("siteUrl", e.target.value)} placeholder="https://…" required /></label>}
               <label><span>站点名称</span><input value={card.siteName || ""} maxLength={80} onChange={e => updateCard("siteName", e.target.value)} /></label>
-              {(["chatLabel", "groupLabel", "siteLabel"] as const).map((key,index) => <label key={key}><span>{["私聊按钮文字","群聊按钮文字","官网按钮文字"][index]}</span><input value={card[key] || ""} maxLength={80} onChange={e => updateCard(key,e.target.value)} /></label>)}
+              {(["chatLabel", "groupLabel", "siteLabel"] as const).map((key,index) => card[(["showChat", "showGroup", "showSite"] as const)[index]] && <label key={key}><span>{["私聊按钮文字","群聊按钮文字","官网按钮文字"][index]}</span><input value={card[key] || ""} maxLength={80} onChange={e => updateCard(key,e.target.value)} /></label>)}
               <small className="whatsapp-field-hint">勾选后显示对应按钮。群聊和官网按钮需填写目标链接后才能生成；取消勾选会隐藏按钮。</small>
             </>}
             <label>
@@ -239,16 +242,12 @@ export default function WhatsAppCardBuilder() {
               <textarea value={card.description} maxLength={240} required rows={4} placeholder="簡單介紹品牌、服務或這張卡片的內容" onChange={(event) => updateCard("description", event.target.value)} />
               <small className="whatsapp-field-hint">最多 240 字</small>
             </label>
-            <label>
+            {card.showChat !== false && <label>
               <span>WhatsApp 電話（含國碼）</span>
               <input type="tel" inputMode="tel" value={card.phone} maxLength={24} required={card.showChat !== false} placeholder="例如：886912345678" onChange={(event) => updateCard("phone", event.target.value)} />
               <small className="whatsapp-field-hint">收件人可從公開卡片直接開啟與你的 WhatsApp 對話。</small>
-            </label>
-            <label>
-              <span>預填聯絡訊息</span>
-              <input value={card.message} maxLength={250} placeholder="您好，我想了解更多資訊。" onChange={(event) => updateCard("message", event.target.value)} />
-            </label>
-            <label>
+            </label>}
+<label>
               <span>分享圖片</span>
               <input type="url" value={card.imageUrl} maxLength={2000} placeholder="https://example.com/card-image.jpg" onChange={(event) => updateCard("imageUrl", event.target.value)} />
               <small className="whatsapp-field-hint">使用公開 HTTPS 圖片網址，或上傳圖片。圖片會作為 WhatsApp 連結預覽。</small>
@@ -312,3 +311,4 @@ export default function WhatsAppCardBuilder() {
     </main>
   );
 }
+
