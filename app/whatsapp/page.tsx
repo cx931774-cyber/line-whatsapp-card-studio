@@ -211,7 +211,7 @@ export default function WhatsAppCardBuilder() {
 
         <div className="whatsapp-builder-layout">
           <form className="whatsapp-form-panel" onSubmit={generateCard}>
-            <label><span>选择模板（5 种）</span><select value={card.templateId || "basic"} onChange={event => {
+            <label><span>选择模板（6 种）</span><select value={card.templateId || "basic"} onChange={event => {
               const template = WA_TEMPLATES.find(t => t.id === event.target.value)!;
               setCard(current => ({...current, templateId: template.id, heading: template.heading, pageDescription: template.pageDescription, badge: template.badge, features: template.features, chatLabel: template.chatLabel, groupLabel: template.groupLabel}));
               setShareUrl(""); setCopied(false);
@@ -221,8 +221,13 @@ export default function WhatsAppCardBuilder() {
                 {(["showChat", "showGroup", "showSite"] as const).map((key,index) => <label key={key} style={{display:"flex",alignItems:"center",gap:10}}><input type="checkbox" style={{width:"auto"}} checked={Boolean(card[key])} onChange={e => updateCard(key,e.target.checked)} /><span>{["联系按钮","群聊按钮","官网按钮"][index]}</span></label>)}
               </fieldset>
               <label><span>网页标题</span><input value={card.heading || ""} maxLength={240} onChange={e => updateCard("heading", e.target.value)} /></label>
-              <label><span>网页介绍</span><textarea value={card.pageDescription || ""} maxLength={240} onChange={e => updateCard("pageDescription", e.target.value)} /></label>
-              {["3", "4", "5"].includes(card.templateId) && <label><span>标签文字</span><input value={card.badge || ""} maxLength={80} onChange={e => updateCard("badge", e.target.value)} /></label>}
+              {card.templateId === "6" && <>
+                <label><span>工单标识</span><input value={card.ticketLabel ?? "TICKET"} maxLength={80} onChange={e => updateCard("ticketLabel",e.target.value)} /></label>
+                <label><span>咨询类型</span><input value={card.ticketType ?? "一对一咨询"} maxLength={240} onChange={e => updateCard("ticketType",e.target.value)} /></label>
+                <label><span>接入时段</span><input value={card.ticketTime ?? "今天随时"} maxLength={240} onChange={e => updateCard("ticketTime",e.target.value)} /></label>
+              </>}
+              {card.templateId !== "6" && <label><span>网页介绍</span><textarea value={card.pageDescription || ""} maxLength={240} onChange={e => updateCard("pageDescription", e.target.value)} /></label>}
+              {["3", "4", "5", "6"].includes(card.templateId) && <label><span>标签文字</span><input value={card.badge || ""} maxLength={80} onChange={e => updateCard("badge", e.target.value)} /></label>}
               {card.templateId === "4" && <label><span>强调文字</span><input value={card.accentText ?? "名额有限"} maxLength={80} onChange={e => updateCard("accentText", e.target.value)} /></label>}
               {["3", "5"].includes(card.templateId) && <label><span>特色列表（每行一项）</span><textarea value={card.features || ""} maxLength={1000} onChange={e => updateCard("features", e.target.value)} /></label>}
               <label><span>网页背景图（独立于分享图片）</span><input type="url" value={card.backgroundUrl || ""} onChange={e => updateCard("backgroundUrl", e.target.value)} placeholder="https://…" /></label>
@@ -311,4 +316,5 @@ export default function WhatsAppCardBuilder() {
     </main>
   );
 }
+
 

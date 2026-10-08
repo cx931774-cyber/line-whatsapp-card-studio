@@ -61,7 +61,7 @@ export function decodeCard(value: string, pageRequestUrl: string): ShareCard {
   for (const key of ["showChat", "showGroup", "showSite"] as const) if (typeof raw[key] === "boolean") fields[key] = raw[key];
   if (fields.showGroup && !raw.groupUrl) throw new Error("已勾選群聊按鈕，請填寫群聊連結");
   if (fields.showSite && !raw.siteUrl) throw new Error("已勾選官網按鈕，請填寫官網連結");
-  for (const key of ["heading", "pageDescription", "badge", "features", "siteName", "chatLabel", "groupLabel", "siteLabel", "accentText"] as const) {
+  for (const key of ["heading", "pageDescription", "badge", "features", "siteName", "chatLabel", "groupLabel", "siteLabel", "accentText", "ticketLabel", "ticketType", "ticketTime"] as const) {
     if (typeof raw[key] === "string") fields[key] = raw[key].slice(0, key === "features" ? 1000 : 240);
   }
   fields.templateId = WA_TEMPLATES.some(t => t.id === raw.templateId) ? String(raw.templateId) : "basic";

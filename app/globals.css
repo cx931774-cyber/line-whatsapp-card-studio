@@ -88,6 +88,7 @@ button { color: inherit; }
 .whatsapp-catalog-preview[data-template="2"], .whatsapp-catalog-preview[data-template="3"] { background: #1a0510; }
 .whatsapp-catalog-preview[data-template="4"] { background: #0a0a0a; }
 .whatsapp-catalog-preview[data-template="5"] { background: #0f172a; }
+.whatsapp-catalog-preview[data-template="6"] { background: #eef2f6; }
 .whatsapp-catalog-preview iframe { display: block; position: absolute; top: 4px; left: 50%; margin-left: -250px; width: 500px; height: 700px; border: 0; transform: scale(.26); transform-origin: top center; pointer-events: none; }
 .whatsapp-template-card .template-card-body { padding: 16px; }
 .whatsapp-template-card .template-card-body h2 { font-size: 18px; margin: 10px 0; }
