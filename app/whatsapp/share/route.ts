@@ -114,7 +114,10 @@ export async function GET(request: Request) {
   const pageUrl = new URL(request.url).href;
   const title = escapeHtml(card.title);
   const description = escapeHtml(card.description);
-  const imageUrl = escapeHtml(card.imageUrl);
+  const image = new URL(card.imageUrl);
+  const probe = new URL(request.url).searchParams.get("probe") || "";
+  if (/^[a-f0-9]{16}$/.test(probe) && image.pathname.startsWith("/api/images/") && ["linkasmnd.it.com", "line-card-lab.cx931774.workers.dev"].includes(image.hostname)) image.searchParams.set("probe",probe);
+  const imageUrl = escapeHtml(image.href);
   const imageMetadata = card.imageWidth ? '<meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' : "";
   const contactUrl = `https://wa.me/${card.phone}?text=${encodeURIComponent(card.message)}`;
   const shareUrl = `https://wa.me/?text=${encodeURIComponent(pageUrl)}`;

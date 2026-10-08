@@ -40,7 +40,13 @@ const worker = {
       }, allowedWidths);
     }
 
-    return handler.fetch(request, env, ctx);
+    const response = await handler.fetch(request, env, ctx);
+    const probe = url.searchParams.get("probe") || "";
+    if (/^[a-f0-9]{16}$/.test(probe) && (url.pathname.startsWith("/c/") || url.pathname.startsWith("/api/images/"))) {
+      ctx.waitUntil(env.DB.prepare("INSERT INTO preview_diagnostics (probe, path, method, user_agent, status, created_at) VALUES (?, ?, ?, ?, ?, ?)")
+        .bind(probe, url.pathname, request.method, (request.headers.get("user-agent") || "").slice(0,300), response.status, Math.floor(Date.now()/1000)).run().catch(() => {}));
+    }
+    return response;
   },
 };
 
