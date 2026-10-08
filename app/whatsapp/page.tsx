@@ -19,6 +19,9 @@ const INITIAL_CARD: WhatsAppCard = {
   imageUrl: "",
   phone: "",
   message: "您好，我想了解更多資訊。",
+  showChat: true,
+  showGroup: false,
+  showSite: false,
 };
 
 function encodeCard(value: WhatsAppCard) {
@@ -123,7 +126,9 @@ export default function WhatsAppCardBuilder() {
     if (!title) return setError("請填寫卡片標題");
     if (!description) return setError("請填寫卡片介紹");
     if (!imageUrl) return setError("請上傳圖片，或填入可公開存取的 HTTPS 圖片網址");
-    if (phone.length < 7 || phone.length > 15) return setError("請填寫含國碼的 WhatsApp 電話號碼，例如 886912345678");
+    if (card.showChat !== false && (phone.length < 7 || phone.length > 15)) return setError("請填寫含國碼的 WhatsApp 電話號碼，例如 886912345678");
+    if (card.showGroup && !card.groupUrl?.trim()) return setError("请填写已勾选按钮的 WhatsApp 群聊链接");
+    if (card.showSite && !card.siteUrl?.trim()) return setError("请填写已勾选按钮的官方网站链接");
 
     let parsedImage: URL;
     try {
@@ -209,6 +214,9 @@ export default function WhatsAppCardBuilder() {
               setShareUrl(""); setCopied(false);
             }}>{WA_TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
             {card.templateId && card.templateId !== "basic" && <>
+              <fieldset className="whatsapp-button-choices"><legend>显示按钮（默认仅联系）</legend>
+                {(["showChat", "showGroup", "showSite"] as const).map((key,index) => <label key={key} style={{display:"flex",alignItems:"center",gap:10}}><input type="checkbox" style={{width:"auto"}} checked={Boolean(card[key])} onChange={e => updateCard(key,e.target.checked)} /><span>{["联系按钮","群聊按钮","官网按钮"][index]}</span></label>)}
+              </fieldset>
               <label><span>网页标题</span><input value={card.heading || ""} maxLength={240} onChange={e => updateCard("heading", e.target.value)} /></label>
               <label><span>网页介绍</span><textarea value={card.pageDescription || ""} maxLength={240} onChange={e => updateCard("pageDescription", e.target.value)} /></label>
               <label><span>标签文字</span><input value={card.badge || ""} maxLength={80} onChange={e => updateCard("badge", e.target.value)} /></label>
@@ -220,7 +228,7 @@ export default function WhatsAppCardBuilder() {
               <label><span>官方网站（可选）</span><input type="url" value={card.siteUrl || ""} onChange={e => updateCard("siteUrl", e.target.value)} placeholder="https://…" /></label>
               <label><span>站点名称</span><input value={card.siteName || ""} maxLength={80} onChange={e => updateCard("siteName", e.target.value)} /></label>
               {(["chatLabel", "groupLabel", "siteLabel"] as const).map((key,index) => <label key={key}><span>{["私聊按钮文字","群聊按钮文字","官网按钮文字"][index]}</span><input value={card[key] || ""} maxLength={80} onChange={e => updateCard(key,e.target.value)} /></label>)}
-              <small className="whatsapp-field-hint">按钮文字和目标链接需要分别填写。预览会显示三个按钮的位置；正式网页仅显示已填写有效链接的按钮。</small>
+              <small className="whatsapp-field-hint">勾选后显示对应按钮。群聊和官网按钮需填写目标链接后才能生成；取消勾选会隐藏按钮。</small>
             </>}
             <label>
               <span>卡片標題</span>
@@ -233,7 +241,7 @@ export default function WhatsAppCardBuilder() {
             </label>
             <label>
               <span>WhatsApp 電話（含國碼）</span>
-              <input type="tel" inputMode="tel" value={card.phone} maxLength={24} required placeholder="例如：886912345678" onChange={(event) => updateCard("phone", event.target.value)} />
+              <input type="tel" inputMode="tel" value={card.phone} maxLength={24} required={card.showChat !== false} placeholder="例如：886912345678" onChange={(event) => updateCard("phone", event.target.value)} />
               <small className="whatsapp-field-hint">收件人可從公開卡片直接開啟與你的 WhatsApp 對話。</small>
             </label>
             <label>

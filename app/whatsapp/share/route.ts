@@ -36,7 +36,7 @@ export function decodeCard(value: string, pageRequestUrl: string): ShareCard {
   const description = typeof raw.description === "string" ? raw.description.trim().slice(0, 240) : "";
   const phone = typeof raw.phone === "string" ? raw.phone.replace(/\D/g, "") : "";
   const message = typeof raw.message === "string" ? raw.message.trim().slice(0, 250) : "您好，我想了解更多資訊。";
-  if (!title || !description || phone.length < 7 || phone.length > 15) {
+  if (!title || !description || (raw.showChat !== false && (phone.length < 7 || phone.length > 15))) {
     throw new Error("卡片資料不完整，請返回生成器重新建立。");
   }
 
@@ -58,6 +58,9 @@ export function decodeCard(value: string, pageRequestUrl: string): ShareCard {
   }
 
   const fields: LandingFields = {};
+  for (const key of ["showChat", "showGroup", "showSite"] as const) if (typeof raw[key] === "boolean") fields[key] = raw[key];
+  if (fields.showGroup && !raw.groupUrl) throw new Error("已勾選群聊按鈕，請填寫群聊連結");
+  if (fields.showSite && !raw.siteUrl) throw new Error("已勾選官網按鈕，請填寫官網連結");
   for (const key of ["heading", "pageDescription", "badge", "features", "siteName", "chatLabel", "groupLabel", "siteLabel", "accentText"] as const) {
     if (typeof raw[key] === "string") fields[key] = raw[key].slice(0, key === "features" ? 1000 : 240);
   }
