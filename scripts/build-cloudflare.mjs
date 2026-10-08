@@ -11,7 +11,6 @@ const result = spawnSync(
     cwd: projectRoot,
     env: {
       ...process.env,
-      CF_STANDALONE: "1",
       CODEX_LOCAL_PREVIEW: "0",
     },
     stdio: "inherit",

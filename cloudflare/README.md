@@ -1,59 +1,75 @@
-# Cloudflare 獨立部署
+# Cloudflare 独立部署
 
-需要 Node.js 22.13+、已安裝的專案依賴，以及具有 Workers、D1 權限的
-Cloudflare 帳號。以下命令都在專案根目錄執行。
+本站使用 Cloudflare Workers 和 D1，构建和发布不需要 ChatGPT 账号。
+需要 Node.js 22.13+ 和已授权的 Cloudflare 账号。
 
-獨立模式使用 `cloudflare/wrangler.jsonc`：Worker 為 `line-card-lab`、D1 為
-`line-card-lab-db`。圖片在沒有 R2 綁定時存入 D1；一般 Sites 建置仍使用
-`.openai/hosting.json` 宣告的綁定；`CODEX_LOCAL_PREVIEW=1` 仍可啟動本機預覽。
+## 当前资源
 
-先建立或確認 D1 資料庫，在 `d1_databases[0]` 加入實際 `database_id`，再建置和
-部署。新資料庫需依序執行 `drizzle/0000` 到 `0005`；現有資料庫先核對遷移記錄。
-`migrations_dir` 相對於設定檔目錄，因此使用 `../drizzle`。
+- Worker：`line-card-lab`
+- D1：`line-card-lab-db`
+- 配置：`cloudflare/wrangler.jsonc`
+- 图片：没有 `UPLOADS` R2 绑定时保存到 D1。
+
+独立配置用于开发和正式构建。当前资源 ID 保持不变，重新部署不会新建数据库。
+原 ChatGPT Sites 的数据库和上传文件不在此资源中，需要单独取得导出或备份。
+
+## 本地开发
 
 ```sh
 npm ci
+npx wrangler d1 migrations apply DB --local --config cloudflare/wrangler.jsonc
+npm run dev
+```
+
+## 正式发布
+
+```sh
 npm run build:cloudflare
 npm run deploy:cloudflare
 ```
 
-`npm run build:cloudflare` 會直接以 Node 呼叫 vinext CLI，設定
-`CF_STANDALONE=1`，並關閉本機預覽模式。它不安裝依賴。部署必須使用產生的
-`dist/server/wrangler.json`，其中已包含 Worker bundle 和 `dist/client` 資產路徑。
-`npm run deploy:cloudflare` 先使用來源設定檔套用遠端 D1 遷移；成功後 Wrangler
-會透過建置產生的 `.wrangler/deploy/config.json` 選取部署設定檔。遷移失敗時不會部署。
+构建脚本关闭不带 Workers 的本机预览模式。
+部署脚本先通过来源配置应用远端 D1 迁移，成功后使用构建产物发布完整网站。
+构建产物位于 `dist/server` 和 `dist/client`；Wrangler 从
+`.wrangler/deploy/config.json` 选择生成的部署配置。
 
-## GitHub 自動發布
+新数据库需要按顺序应用 `drizzle/0000` 到 `0005`。已有数据库使用迁移记录避免
+重复执行。数据库迁移与 Worker 发布不是同一个交易，新迁移应兼容上一版网站。
 
-`.github/workflows/deploy-cloudflare.yml` 在推送到 `main` 時執行，也可從 GitHub
-Actions 手動執行。流程使用 Node.js 22.16.0，依序安裝鎖定版本的依賴、建置、
-套用遠端 D1 遷移和部署。正式發布共用同一個 concurrency group，不取消進行中的發布。
+## GitHub 自动发布
 
-在 GitHub 倉庫的 Settings > Secrets and variables > Actions 新增兩個 repository secrets：
+新仓库向 `main` 推送时运行 `.github/workflows/deploy-cloudflare.yml`，也可以在
+GitHub Actions 手动运行。流程安装锁定依赖、构建、应用迁移并发布。
 
-- `CLOUDFLARE_API_TOKEN`：部署用的 Cloudflare user token。
-- `CLOUDFLARE_ACCOUNT_ID`：Worker 與 D1 所屬帳號的 ID。
+仓库需要两项 Actions repository secrets：
 
-目前部署只需要限定目標帳號的 Workers Scripts Edit、D1 Edit 和 Account Settings Read。
-此流程直接使用上述 token，不需要 Cloudflare Workers Builds 的 token 或管理權限。
-GitHub workflow 本身只授予 `contents: read`，Cloudflare secrets 只注入部署步驟。
-請勿將 token 寫入原始碼、Wrangler 設定或日誌。
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
 
-資料庫遷移和 Worker 部署並非同一個交易；若遷移成功但部署失敗，已套用的遷移
-仍然存在。後續遷移應保留與上一版 Worker 的相容性。
+Token 的授权范围为目标账号的 Workers Scripts Edit、D1 Edit 和
+Account Settings Read。不要将凭证写入源码或日志。工作流仅授予
+`contents: read`，发布凭证只注入部署步骤。
 
-設定方式參考 [Cloudflare GitHub Actions 官方說明](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/)
-及 [GitHub Actions secrets 官方說明](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)。
+迁移发布来源后，应停用旧仓库的发布工作流，防止两个仓库覆盖同一个 Worker。
+GitHub concurrency 只限制本仓库内的并发发布。
 
-Wrangler 4.92 支援部署時建立缺失的 D1 資源；遠端資料庫遷移仍需要設定檔中
-的實際 `database_id`。非互動部署不保證將資源 ID 寫回來源設定檔。
+## 管理员
 
-圖片使用 `0005_image_storage` 的中繼資料與分片表。每片原始資料為 256 KiB，
-以 base64 儲存後約 350 KiB；一般上傳維持處理後 JPEG 5 MiB 上限，管理員標誌
-維持 2 MiB 上限。D1 儲存量約比原圖片增加三分之一，圖片存取會使用 D1 配額。
-若之後加入 `UPLOADS` R2 綁定，上傳改用 R2，既有 D1 圖片仍可讀取。
-上線這版前，已有 R2 的部署也需套用 `0005`，以支援混合讀取。
+没有管理员时，设置临时 `ADMIN_SETUP_TOKEN` Worker secret，并从
+`/admin/setup?token=...` 创建管理员。初始化后移除该 secret。
+已有管理员时初始化接口返回 409，不会重复创建。
 
-首次建立管理員時需設定 `ADMIN_SETUP_TOKEN` Worker secret。此站目前直接提供
-圖片，沒有啟用 Cloudflare Images 綁定；如需 `/_vinext/image` 最佳化端點，再依
-帳號的 Images 方案新增 `images: { "binding": "IMAGES" }`。
+## 图片
+
+`0005_image_storage` 提供图片元数据和分片表。每片原始数据为 256 KiB；
+base64 存储约增加三分之一空间。处理后 JPEG 上传上限 5 MiB，管理员标志
+上限 2 MiB。加入 `UPLOADS` R2 绑定后新上传使用 R2，已有 D1 图片仍可读取。
+本站直接提供图片，未启用 Cloudflare Images 优化端点。
+
+## 域名
+
+WhatsApp 分享页及图片链接按照访问时的当前域名生成。绑定新的正式域名后，
+同步更新 `app/layout.tsx` 的 `metadataBase`。更换 GitHub 仓库不会改变 DNS。
+
+参考 [Cloudflare GitHub Actions 文档](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/)
+和 [GitHub Actions Secrets 文档](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)。
