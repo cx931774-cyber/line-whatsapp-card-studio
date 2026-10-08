@@ -83,7 +83,9 @@ button { color: inherit; }
 .line-dot { background: #06c755; }
 .whatsapp-dot { background: #25d366; }
 .whatsapp-heading > span { color: #15914a; }
-.whatsapp-template-grid { display: grid; grid-template-columns: minmax(280px, 520px); justify-content: center; }
+.whatsapp-template-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 340px)); justify-content: center; gap: 24px; }
+.whatsapp-catalog-preview { height: 490px; overflow: hidden; position: relative; background: #f4f7f3; border-bottom: 1px solid #e5ebe5; }
+.whatsapp-catalog-preview iframe { display: block; width: 142.857143%; height: 700px; border: 0; transform: scale(.7); transform-origin: top left; pointer-events: none; }
 .whatsapp-feature-preview { position: relative; display: flex; align-items: center; gap: 20px; aspect-ratio: 2 / 1; overflow: hidden; padding: 28px; background: radial-gradient(circle at 87% 13%, #a2f0b9 0, transparent 34%), linear-gradient(135deg, #0b5531, #0d3325 75%); color: white; }
 .whatsapp-feature-preview::before, .whatsapp-feature-preview::after { content: ""; position: absolute; width: 190px; height: 190px; border: 1px solid #ffffff25; border-radius: 50%; right: -62px; bottom: -136px; }
 .whatsapp-feature-preview::after { width: 135px; height: 135px; right: -34px; bottom: -105px; }

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
-import { WA_TEMPLATES } from "./lib/whatsapp-templates";
+import { WA_TEMPLATES, landingMarkup } from "./lib/whatsapp-templates";
 
 type FontSize = "xxs" | "xs" | "sm" | "md" | "lg" | "xl" | "xxl" | "3xl" | "4xl" | "5xl";
 type ButtonStyle = "primary" | "secondary" | "link";
@@ -403,16 +403,14 @@ function TemplateCatalog({ onOpenLineCarousel, account }: { onOpenLineCarousel: 
             <p>建立可公開開啟的卡片連結，透過 WhatsApp 分享時由平台讀取真實網頁預覽。</p>
           </div>
           <div className="whatsapp-template-grid">
-            {WA_TEMPLATES.filter(t => t.id !== "basic").map(template => <article key={template.id} className="template-card whatsapp-template-card">
-              <div className="whatsapp-feature-preview" aria-hidden="true"><span className="whatsapp-feature-mark">WA</span><span className="whatsapp-feature-caption">{template.name}</span></div>
+            {WA_TEMPLATES.filter(t => t.id !== "basic").map(template => {
+              const preview = landingMarkup({templateId:template.id,title:template.name,description:template.pageDescription,imageUrl:"",groupUrl:"https://chat.whatsapp.com/example",siteUrl:"https://example.com"},"https://wa.me/8613800138000")!;
+              return <article key={template.id} className="template-card whatsapp-template-card">
+              <div className="whatsapp-catalog-preview"><iframe title={`${template.name}实际样式预览`} loading="lazy" sandbox="" tabIndex={-1} srcDoc={`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${preview.css}body{overflow:hidden}a{pointer-events:none}</style></head><body>${preview.body}</body></html>`} /></div>
               <div className="template-card-body"><span className="whatsapp-free-label">免费生成 · 不扣额度</span><h2>{template.name}</h2><p>{template.heading}。支持独立分享图片、背景图、私聊、群聊及官网按钮。</p><a className="whatsapp-create-link" href={`/whatsapp?template=${template.id}`}>使用这个模板</a></div>
-            </article>)}
+            </article>;})}
             <article className="template-card whatsapp-template-card">
-              <div className="whatsapp-feature-preview" aria-hidden="true">
-                <span className="whatsapp-feature-mark">WA</span>
-                <span className="whatsapp-feature-caption">PUBLIC SHARE PAGE</span>
-                <span className="whatsapp-feature-line" />
-              </div>
+              <div className="whatsapp-catalog-preview"><iframe title="通用图文卡片样式预览" loading="lazy" sandbox="" tabIndex={-1} srcDoc={'<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;background:#f4f7f3;color:#17231b;font-family:system-ui,sans-serif;padding:24px 16px}.card{border:1px solid #e5ebe5;border-radius:22px;background:white;overflow:hidden}.image{height:200px;background:#eaf1e9;display:grid;place-items:center;color:#647068}.content{padding:26px}small{color:#128c48;letter-spacing:.13em}h1{font-size:30px;margin:14px 0}p{color:#647068;line-height:1.7}.buttons{display:flex;gap:10px;margin-top:24px}.buttons span{flex:1;padding:14px 8px;border:1px solid #e5ebe5;border-radius:12px;font-size:13px;text-align:center;font-weight:700}.buttons span:first-child{background:#25d366}</style></head><body><article class="card"><div class="image">分享图片</div><div class="content"><small>WHATSAPP SHARE CARD</small><h1>你的品牌或服务</h1><p>介绍品牌、服务与联系方式。点击按钮即可在 WhatsApp 联系你。</p><div class="buttons"><span>在 WhatsApp 联络</span><span>分享到 WhatsApp</span></div></div></article></body></html>'} /></div>
               <div className="template-card-body">
                 <span className="whatsapp-free-label">免費生成 · 不扣額度</span>
                 <h2>WhatsApp 聯絡分享卡</h2>
