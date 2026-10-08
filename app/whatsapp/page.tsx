@@ -220,6 +220,7 @@ export default function WhatsAppCardBuilder() {
               <label><span>官方网站（可选）</span><input type="url" value={card.siteUrl || ""} onChange={e => updateCard("siteUrl", e.target.value)} placeholder="https://…" /></label>
               <label><span>站点名称</span><input value={card.siteName || ""} maxLength={80} onChange={e => updateCard("siteName", e.target.value)} /></label>
               {(["chatLabel", "groupLabel", "siteLabel"] as const).map((key,index) => <label key={key}><span>{["私聊按钮文字","群聊按钮文字","官网按钮文字"][index]}</span><input value={card[key] || ""} maxLength={80} onChange={e => updateCard(key,e.target.value)} /></label>)}
+              <small className="whatsapp-field-hint">按钮文字和目标链接需要分别填写。预览会显示三个按钮的位置；正式网页仅显示已填写有效链接的按钮。</small>
             </>}
             <label>
               <span>卡片標題</span>
@@ -264,9 +265,10 @@ export default function WhatsAppCardBuilder() {
               <span>公開分享頁</span>
             </div>
             {card.templateId && card.templateId !== "basic" && (() => {
-              const preview = landingMarkup(card, `https://wa.me/${card.phone.replace(/\D/g, "")}`);
+              const preview = landingMarkup(card, `https://wa.me/${card.phone.replace(/\D/g, "")}`, true);
               return preview ? <iframe title="模板落地页预览" sandbox="" style={{width:"100%",height:650,border:0,borderRadius:16}} srcDoc={`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${preview.css}</style></head><body>${preview.body}</body></html>`} /> : null;
             })()}
+            {card.templateId && card.templateId !== "basic" && <p className="whatsapp-preview-note">上方为完整落地页及按钮；下方为 WhatsApp 链接预览内容，聊天预览不显示网页按钮。</p>}
             <article className="whatsapp-live-card">
               {card.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -278,7 +280,7 @@ export default function WhatsAppCardBuilder() {
                 <small>WHATSAPP CARD</small>
                 <h3>{card.title || "卡片標題"}</h3>
                 <p>{card.description || "卡片介紹會顯示在這裡。"}</p>
-                <span className="whatsapp-contact-preview">在 WhatsApp 聯絡</span>
+                {(!card.templateId || card.templateId === "basic") && <span className="whatsapp-contact-preview">在 WhatsApp 聯絡</span>}
               </div>
             </article>
 
