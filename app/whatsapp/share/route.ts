@@ -72,7 +72,7 @@ export function decodeCard(value: string, pageRequestUrl: string): ShareCard {
     if (key === "groupUrl" && value.hostname !== "chat.whatsapp.com") throw new Error("群聊網址必須來自 chat.whatsapp.com");
     fields[key] = value.href;
   }
-  const dimensions = raw.imageWidth === 1200 && raw.imageHeight === 630 ? {imageWidth:1200,imageHeight:630} : {};
+  const dimensions = Number.isInteger(raw.imageWidth) && Number.isInteger(raw.imageHeight) && Number(raw.imageWidth)>0 && Number(raw.imageHeight)>0 && Number(raw.imageWidth)<=2400 && Number(raw.imageHeight)<=2400 ? {imageWidth:Number(raw.imageWidth),imageHeight:Number(raw.imageHeight)} : {};
   return { ...fields, ...dimensions, title, description, imageUrl: image.href, phone, message };
 }
 
@@ -128,7 +128,7 @@ export async function GET(request: Request) {
   const probe = new URL(request.url).searchParams.get("probe") || "";
   if (/^[a-f0-9]{16}$/.test(probe) && image.pathname.startsWith("/api/images/") && ["linkasmnd.it.com", "line-card-lab.cx931774.workers.dev"].includes(image.hostname)) image.searchParams.set("probe",probe);
   const imageUrl = escapeHtml(image.href);
-  const imageMetadata = card.imageWidth ? '<meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' : "";
+  const imageMetadata = card.imageWidth ? `<meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="${card.imageWidth}"><meta property="og:image:height" content="${card.imageHeight}">` : "";
   const contactUrl = `https://wa.me/${card.phone}?text=${encodeURIComponent(card.message)}`;
   const shareUrl = `https://wa.me/?text=${encodeURIComponent(pageUrl)}`;
   const landing = landingMarkup(card, contactUrl);
@@ -168,4 +168,5 @@ export async function GET(request: Request) {
   <main><article class="card"><img class="hero" src="${imageUrl}" alt="${title}" fetchpriority="high"><div class="content"><p class="eyebrow">WHATSAPP SHARE CARD</p><h1>${title}</h1><p>${description}</p><div class="actions"><a class="contact" href="${escapeHtml(contactUrl)}" target="_blank" rel="noopener noreferrer">在 WhatsApp 聯絡</a><a href="${escapeHtml(shareUrl)}" target="_blank" rel="noopener noreferrer">分享到 WhatsApp</a></div></div></article><p class="foot">這是一張公開分享卡片。透過 WhatsApp 傳送連結時，預覽由本頁的 Open Graph 資料產生。</p></main>
 </body></html>`);
 }
+
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { screenshotTemplate } from "../lib/template-screenshot";
 import { WA_TEMPLATES, landingMarkup, type LandingFields } from "../lib/whatsapp-templates";
 
 type WhatsAppCard = LandingFields & {
@@ -125,14 +126,14 @@ export default function WhatsAppCardBuilder() {
     const phone = card.phone.replace(/\D/g, "");
     if (!title) return setError("請填寫卡片標題");
     if (!description) return setError("請填寫卡片介紹");
-    if (!imageUrl) return setError("請上傳圖片，或填入可公開存取的 HTTPS 圖片網址");
+    if ((!card.templateId || card.templateId === "basic") && !imageUrl) return setError("請上傳圖片，或填入可公開存取的 HTTPS 圖片網址");
     if (card.showChat !== false && (phone.length < 7 || phone.length > 15)) return setError("請填寫含國碼的 WhatsApp 電話號碼，例如 886912345678");
     if (card.showGroup && !card.groupUrl?.trim()) return setError("请填写已勾选按钮的 WhatsApp 群聊链接");
     if (card.showSite && !card.siteUrl?.trim()) return setError("请填写已勾选按钮的官方网站链接");
 
     let parsedImage: URL;
     try {
-      parsedImage = new URL(imageUrl);
+      parsedImage = new URL(imageUrl || window.location.origin);
     } catch {
       return setError("圖片網址格式不正確");
     }
@@ -145,11 +146,19 @@ export default function WhatsAppCardBuilder() {
     setGenerating(true);
     setShareUrl("");
     try {
-      const imageResponse = await fetch(parsedImage.href, {mode: "cors", signal: AbortSignal.timeout(15000)});
-      if (!imageResponse.ok) throw new Error("圖片網址無法讀取，請改用有效圖片網址或上傳圖片");
-      const imageBlob = await imageResponse.blob();
-      if (!imageBlob.type.startsWith("image/") || imageBlob.size > 10 * 1024 * 1024) throw new Error("圖片網址必須直接提供 10MB 以內的圖片");
-      const normalized = await prepareUpload(new File([imageBlob], "source-image", {type:imageBlob.type}), true);
+      let normalized: Blob;
+      let imageWidth = 1200, imageHeight = 630;
+      if (card.templateId && card.templateId !== "basic") {
+        const screenshot = await screenshotTemplate({...card,title,description,heading:title,pageDescription:description,phone,
+          groupUrl:card.showGroup ? card.groupUrl : undefined,siteUrl:card.showSite ? card.siteUrl : undefined});
+        normalized = screenshot.blob; imageWidth=screenshot.width; imageHeight=screenshot.height;
+      } else {
+        const imageResponse=await fetch(parsedImage.href,{mode:"cors",signal:AbortSignal.timeout(15000)});
+        if(!imageResponse.ok) throw new Error("图片无法读取");
+        const imageBlob=await imageResponse.blob();
+        if(!imageBlob.type.startsWith("image/") || imageBlob.size>10*1024*1024)throw new Error("图片格式或大小不符合要求");
+        normalized=await prepareUpload(new File([imageBlob],"source-image",{type:imageBlob.type}),true);
+      }
       const imageForm = new FormData();
       imageForm.append("file", normalized, "whatsapp-preview.jpg");
       const uploadResponse = await fetch("/api/images", {method:"POST",body:imageForm});
@@ -157,7 +166,7 @@ export default function WhatsAppCardBuilder() {
       if (!uploadResponse.ok || !upload.url) throw new Error(upload.error || "分享圖片儲存失敗");
       const hostedImage = new URL(upload.url);
       if (!["localhost","127.0.0.1"].includes(window.location.hostname)) hostedImage.host = "linkasmnd.it.com";
-      const payload = encodeCard({ ...card, title, description, heading:title, pageDescription:description, imageUrl: hostedImage.href, phone, imageWidth:1200, imageHeight:630,
+      const payload = encodeCard({ ...card, title, description, heading:title, pageDescription:description, imageUrl: hostedImage.href, phone, imageWidth, imageHeight,
         groupUrl:card.showGroup ? card.groupUrl : undefined,
         siteUrl:card.showSite ? card.siteUrl : undefined,
       });
@@ -249,7 +258,7 @@ export default function WhatsAppCardBuilder() {
               <input type="tel" inputMode="tel" value={card.phone} maxLength={24} required={card.showChat !== false} placeholder="例如：886912345678" onChange={(event) => updateCard("phone", event.target.value)} />
               <small className="whatsapp-field-hint">收件人可從公開卡片直接開啟與你的 WhatsApp 對話。</small>
             </label>}
-<label>
+            {(!card.templateId || card.templateId === "basic") && <><label>
               <span>分享圖片</span>
               <input type="url" value={card.imageUrl} maxLength={2000} placeholder="https://example.com/card-image.jpg" onChange={(event) => updateCard("imageUrl", event.target.value)} />
               <small className="whatsapp-field-hint">使用公開 HTTPS 圖片網址，或上傳圖片。圖片會作為 WhatsApp 連結預覽。</small>
@@ -259,7 +268,7 @@ export default function WhatsAppCardBuilder() {
               <span aria-hidden="true">＋</span>
               <strong>{uploading ? "圖片上傳中…" : "上傳圖片"}</strong>
               <small>上傳後會填入圖片網址</small>
-            </label>
+            </label></>}
 
             {error && <p className="whatsapp-message error" role="alert">{error}</p>}
             {notice && <p className="whatsapp-message success" role="status">{notice}</p>}
@@ -313,6 +322,7 @@ export default function WhatsAppCardBuilder() {
     </main>
   );
 }
+
 
 
 
