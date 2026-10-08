@@ -1,1 +1,1 @@
-export { GET } from "../../whatsapp/share/route";
+export { GET, OPTIONS } from "../../whatsapp/share/route";

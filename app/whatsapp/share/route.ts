@@ -78,11 +78,18 @@ function htmlResponse(content: string, status = 200) {
     status,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+      "Cross-Origin-Resource-Policy": "cross-origin",
       "Cache-Control": "public, max-age=60, s-maxage=300",
       "X-Content-Type-Options": "nosniff",
       "Referrer-Policy": "strict-origin-when-cross-origin",
     },
   });
+}
+
+export function OPTIONS() {
+  return new Response(null, {status:204,headers:{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, HEAD, OPTIONS","Access-Control-Allow-Headers":"Range","Access-Control-Max-Age":"86400"}});
 }
 
 function errorPage(message: string, status: number) {

@@ -15,8 +15,15 @@ export async function GET(
   return new Response(object.body, {
     headers: {
       "Content-Type": object.contentType,
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+      "Cross-Origin-Resource-Policy": "cross-origin",
       "Cache-Control": "public, max-age=31536000, immutable",
       "X-Content-Type-Options": "nosniff",
     },
   });
+}
+
+export function OPTIONS() {
+  return new Response(null, {status:204,headers:{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Methods":"GET, HEAD, OPTIONS","Access-Control-Allow-Headers":"Range","Access-Control-Max-Age":"86400"}});
 }
