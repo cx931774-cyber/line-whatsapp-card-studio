@@ -276,8 +276,7 @@ export default function WhatsAppCardBuilder() {
               const preview = landingMarkup(card, `https://wa.me/${card.phone.replace(/\D/g, "")}`, true);
               return preview ? <iframe title="模板落地页预览" sandbox="" style={{width:"100%",height:650,border:0,borderRadius:16}} srcDoc={`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${preview.css}</style></head><body>${preview.body}</body></html>`} /> : null;
             })()}
-            {card.templateId && card.templateId !== "basic" && <p className="whatsapp-preview-note">上方为完整落地页及按钮；下方为 WhatsApp 链接预览内容，聊天预览不显示网页按钮。</p>}
-            <article className="whatsapp-live-card">
+            {(!card.templateId || card.templateId === "basic") && <article className="whatsapp-live-card">
               {card.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={card.imageUrl} alt="卡片圖片預覽" />
@@ -290,7 +289,7 @@ export default function WhatsAppCardBuilder() {
                 <p>{card.description || "卡片介紹會顯示在這裡。"}</p>
                 {(!card.templateId || card.templateId === "basic") && <span className="whatsapp-contact-preview">在 WhatsApp 聯絡</span>}
               </div>
-            </article>
+            </article>}
 
             {shareUrl ? (
               <div className="whatsapp-result-panel">
