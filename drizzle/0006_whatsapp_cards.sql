@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS whatsapp_cards (
+  id TEXT PRIMARY KEY NOT NULL,
+  payload TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);

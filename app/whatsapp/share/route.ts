@@ -1,3 +1,5 @@
+import { database } from "../../lib/auth";
+
 type ShareCard = {
   title: string;
   description: string;
@@ -17,7 +19,7 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (character) => escaped[character] || character);
 }
 
-function decodeCard(value: string, pageRequestUrl: string): ShareCard {
+export function decodeCard(value: string, pageRequestUrl: string): ShareCard {
   if (!value || value.length > 12000 || !/^[A-Za-z0-9_-]+$/.test(value)) {
     throw new Error("卡片連結格式不正確，請重新生成分享連結。");
   }
@@ -79,7 +81,15 @@ export async function GET(request: Request) {
   let card: ShareCard;
   try {
     const url = new URL(request.url);
-    card = decodeCard(url.searchParams.get("card") || "", request.url);
+    const id = url.pathname.startsWith("/c/") ? url.pathname.split("/")[2] : "";
+    let payload = url.searchParams.get("card") || "";
+    if (id) {
+      if (!/^[a-f0-9]{32}$/.test(id)) return errorPage("卡片不存在", 404);
+      const row = await database().prepare("SELECT payload FROM whatsapp_cards WHERE id = ?").bind(id).first<{payload: string}>();
+      if (!row) return errorPage("卡片不存在", 404);
+      payload = row.payload;
+    }
+    card = decodeCard(payload, request.url);
   } catch (error) {
     const message = error instanceof Error ? error.message : "卡片連結格式不正確，請重新生成分享連結。";
     return errorPage(message, 400);

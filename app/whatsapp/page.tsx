@@ -55,6 +55,7 @@ export default function WhatsAppCardBuilder() {
   const [notice, setNotice] = useState("");
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const updateCard = <K extends keyof WhatsAppCard>(key: K, value: WhatsAppCard[K]) => {
     setCard((current) => ({ ...current, [key]: value }));
@@ -94,7 +95,7 @@ export default function WhatsAppCardBuilder() {
     }
   };
 
-  const generateCard = (event: FormEvent<HTMLFormElement>) => {
+  const generateCard = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
     setNotice("");
@@ -120,10 +121,24 @@ export default function WhatsAppCardBuilder() {
     if (parsedImage.protocol !== "https:" && !localImageAllowed) return setError("圖片網址必須使用 HTTPS，WhatsApp 才能讀取分享預覽");
 
     const payload = encodeCard({ ...card, title, description, imageUrl: parsedImage.href, phone });
-    const url = new URL("/whatsapp/share", window.location.origin);
-    url.searchParams.set("card", payload);
-    setShareUrl(url.href);
-    setCopied(false);
+    if (generating) return;
+    setGenerating(true);
+    setShareUrl("");
+    try {
+      const response = await fetch("/api/whatsapp/cards", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({card: payload}),
+      });
+      const result = await response.json() as {url?: string; error?: string};
+      if (!response.ok || !result.url) throw new Error(result.error || "卡片儲存失敗");
+      setShareUrl(result.url);
+      setCopied(false);
+      setNotice("卡片已儲存。貼到 WhatsApp 後，請等圖片預覽出現再傳送。");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "卡片儲存失敗");
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const copyLink = async () => {
@@ -193,7 +208,7 @@ export default function WhatsAppCardBuilder() {
             {error && <p className="whatsapp-message error" role="alert">{error}</p>}
             {notice && <p className="whatsapp-message success" role="status">{notice}</p>}
 
-            <button className="whatsapp-generate-button" type="submit" disabled={uploading}>免費生成分享卡</button>
+            <button className="whatsapp-generate-button" type="submit" disabled={uploading || generating}>{generating ? "正在儲存卡片…" : "免費生成分享卡"}</button>
             <p className="whatsapp-privacy-note">分享卡網址包含你填寫的公開資料；請勿放入密碼或私密資訊。免費生成，不扣 LINE 額度，也不需要付款。本機 localhost 連結只供預覽；分享給他人需使用已部署的 HTTPS 網域。</p>
           </form>
 
