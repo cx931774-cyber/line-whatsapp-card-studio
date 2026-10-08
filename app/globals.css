@@ -83,9 +83,16 @@ button { color: inherit; }
 .line-dot { background: #06c755; }
 .whatsapp-dot { background: #25d366; }
 .whatsapp-heading > span { color: #15914a; }
-.whatsapp-template-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 340px)); justify-content: center; gap: 24px; }
-.whatsapp-catalog-preview { height: 490px; overflow: hidden; position: relative; background: #f4f7f3; border-bottom: 1px solid #e5ebe5; }
-.whatsapp-catalog-preview iframe { display: block; width: 142.857143%; height: 700px; border: 0; transform: scale(.7); transform-origin: top left; pointer-events: none; }
+.whatsapp-template-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 260px)); justify-content: center; gap: 22px; }
+.whatsapp-catalog-preview { height: 190px; overflow: hidden; position: relative; background: #f4f7f3; border-bottom: 1px solid #e5ebe5; }
+.whatsapp-catalog-preview[data-template="2"], .whatsapp-catalog-preview[data-template="3"] { background: #1a0510; }
+.whatsapp-catalog-preview[data-template="4"] { background: #0a0a0a; }
+.whatsapp-catalog-preview[data-template="5"] { background: #0f172a; }
+.whatsapp-catalog-preview iframe { display: block; position: absolute; top: 4px; left: 50%; margin-left: -250px; width: 500px; height: 700px; border: 0; transform: scale(.26); transform-origin: top center; pointer-events: none; }
+.whatsapp-template-card .template-card-body { padding: 16px; }
+.whatsapp-template-card .template-card-body h2 { font-size: 18px; margin: 10px 0; }
+.whatsapp-template-card .template-card-body p { font-size: 12px; line-height: 1.6; }
+.whatsapp-template-card .whatsapp-create-link { margin-top: 14px; padding: 10px; }
 .whatsapp-feature-preview { position: relative; display: flex; align-items: center; gap: 20px; aspect-ratio: 2 / 1; overflow: hidden; padding: 28px; background: radial-gradient(circle at 87% 13%, #a2f0b9 0, transparent 34%), linear-gradient(135deg, #0b5531, #0d3325 75%); color: white; }
 .whatsapp-feature-preview::before, .whatsapp-feature-preview::after { content: ""; position: absolute; width: 190px; height: 190px; border: 1px solid #ffffff25; border-radius: 50%; right: -62px; bottom: -136px; }
 .whatsapp-feature-preview::after { width: 135px; height: 135px; right: -34px; bottom: -105px; }

@@ -406,7 +406,7 @@ function TemplateCatalog({ onOpenLineCarousel, account }: { onOpenLineCarousel: 
             {WA_TEMPLATES.filter(t => t.id !== "basic").map(template => {
               const preview = landingMarkup({templateId:template.id,title:template.name,description:template.pageDescription,imageUrl:"",groupUrl:"https://chat.whatsapp.com/example",siteUrl:"https://example.com"},"https://wa.me/8613800138000")!;
               return <article key={template.id} className="template-card whatsapp-template-card">
-              <div className="whatsapp-catalog-preview"><iframe title={`${template.name}实际样式预览`} loading="lazy" sandbox="" tabIndex={-1} srcDoc={`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${preview.css}body{overflow:hidden}a{pointer-events:none}</style></head><body>${preview.body}</body></html>`} /></div>
+              <div className="whatsapp-catalog-preview" data-template={template.id}><iframe title={`${template.name}实际样式预览`} loading="lazy" sandbox="" tabIndex={-1} srcDoc={`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${preview.css}body{overflow:hidden}a{pointer-events:none}</style></head><body>${preview.body}</body></html>`} /></div>
               <div className="template-card-body"><span className="whatsapp-free-label">免费生成 · 不扣额度</span><h2>{template.name}</h2><p>{template.heading}。支持独立分享图片、背景图、私聊、群聊及官网按钮。</p><a className="whatsapp-create-link" href={`/whatsapp?template=${template.id}`}>使用这个模板</a></div>
             </article>;})}
             <article className="template-card whatsapp-template-card">
@@ -955,3 +955,4 @@ export default function Home() {
     </main>
   );
 }
+
