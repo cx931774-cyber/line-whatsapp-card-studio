@@ -38,7 +38,8 @@ export async function screenshotTemplate(card: LandingFields & {title:string;des
     await doc.fonts.ready;
     const target=doc.querySelector<HTMLElement>(".card,.glass") || doc.body;
     const rect=target.getBoundingClientRect();
-    const canvas=await (window as ScreenshotWindow).html2canvas!(target,{backgroundColor:card.templateId==="6"?"#ffffff":"#1a0510",scale:Math.min(2,1200/Math.max(rect.width,rect.height)),useCORS:true,logging:false,windowWidth:480,windowHeight:720});
+    // Let the browser lay out text instead of html2canvas approximating font baselines.
+    const canvas=await (window as ScreenshotWindow).html2canvas!(target,{foreignObjectRendering:true,backgroundColor:card.templateId==="6"?"#ffffff":"#1a0510",scale:Math.min(2,1200/Math.max(rect.width,rect.height)),useCORS:true,logging:false,windowWidth:480,windowHeight:720});
     let blob:Blob|null=null;
     for(const quality of [.88,.72,.56,.4]) {
       blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/jpeg",quality));

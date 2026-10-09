@@ -15,6 +15,7 @@ export function landingMarkup(card: LandingFields & {title:string;description:st
  const features=(card.features ?? template.features).split("\n").filter(Boolean).map(s=>`<div>${escape(s)}</div>`).join("");
  const body=template.id === "6" ? `<div class="card"><div class="top"><strong>${text("ticketLabel","TICKET")}</strong><span class="pill">${escape(badge)}</span></div><div class="body">${heading}<div class="row">类型：${text("ticketType","一对一咨询")}</div><div class="row">时段：${text("ticketTime","今天随时")}</div>${buttons}</div></div>` : template.id === "4" ? `<div class="hero"><div>${intro}</div></div><div class="bar">${buttons}</div>` : `<div class="${template.id === "2" ? "card" : "glass"}">${intro}${features ? `<div class="list">${features}</div>` : ""}${buttons}</div>`;
  const background=card.backgroundUrl ? `url("${encodeURI(card.backgroundUrl).replace(/["()'\\]/g,c=>encodeURIComponent(c))}")` : "none";
- return {css:`${template.css} body{min-height:100vh;--wa-background:${background}}`,body};
+ return {css:`${template.css} body{min-height:100vh;--wa-background:${background}} .btn{display:flex;align-items:center;justify-content:center;min-height:48px;line-height:1.4;text-align:center} .pill,.badge{display:inline-flex;align-items:center;justify-content:center;line-height:1.4;min-height:26px;vertical-align:middle} .top strong{line-height:1.4}`,body};
 }
+
 
