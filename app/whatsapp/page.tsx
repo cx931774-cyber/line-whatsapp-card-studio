@@ -146,6 +146,12 @@ export default function WhatsAppCardBuilder() {
     setGenerating(true);
     setShareUrl("");
     try {
+      const sessionResponse = await fetch("/api/auth/me", {cache: "no-store"});
+      if (!sessionResponse.ok) throw new Error("無法讀取帳號，請稍後再試");
+      const session = await sessionResponse.json() as {user: {vip: boolean; freeGenerationsRemaining: number | null} | null};
+      if (!session.user) throw new Error("請先點下方「登入 / 帳戶」登入，再回到此頁生成卡片");
+      if (!session.user.vip && (session.user.freeGenerationsRemaining ?? 0) <= 0)
+        throw new Error("3 次免費生成額度已用完，LINE 與 WhatsApp 共用額度，請開通 VIP");
       let normalized: Blob;
       let imageWidth = 1200, imageHeight = 630;
       if (card.templateId && card.templateId !== "basic") {
@@ -174,11 +180,11 @@ export default function WhatsAppCardBuilder() {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({card: payload}),
       });
-      const result = await response.json() as {url?: string; error?: string};
+      const result = await response.json() as {url?: string; error?: string; remaining?: number | null; unlimited?: boolean};
       if (!response.ok || !result.url) throw new Error(result.error || "卡片儲存失敗");
       setShareUrl(result.url);
       setCopied(false);
-      setNotice("卡片已儲存。貼到 WhatsApp 後，請等圖片預覽出現再傳送。");
+      setNotice(`卡片已儲存。${result.unlimited ? "" : `剩餘 ${result.remaining ?? 0} 次免費額度。`}貼到 WhatsApp 後，請等圖片預覽出現再傳送。`);
     } catch (error) {
       setError(error instanceof TypeError ? "圖片網站不允許瀏覽器讀取。請下載原圖後上傳，再生成卡片。" : error instanceof Error ? error.message : "卡片儲存失敗");
     } finally {
@@ -273,8 +279,9 @@ export default function WhatsAppCardBuilder() {
             {error && <p className="whatsapp-message error" role="alert">{error}</p>}
             {notice && <p className="whatsapp-message success" role="status">{notice}</p>}
 
+            <p>普通帳號與 LINE 共用 3 次免費生成額度，VIP 不限次數。<a href="/account" target="_blank" rel="noopener noreferrer">登入 / 帳戶</a></p>
             <button className="whatsapp-generate-button" type="submit" disabled={uploading || generating}>{generating ? "正在儲存卡片…" : "免費生成分享卡"}</button>
-            <p className="whatsapp-privacy-note">分享卡網址包含你填寫的公開資料；請勿放入密碼或私密資訊。免費生成，不扣 LINE 額度，也不需要付款。本機 localhost 連結只供預覽；分享給他人需使用已部署的 HTTPS 網域。</p>
+            <p className="whatsapp-privacy-note">分享卡網址包含你填寫的公開資料；請勿放入密碼或私密資訊。普通帳號與 LINE 共用 3 次免費生成額度，VIP 不限次數。本機 localhost 連結只供預覽；分享給他人需使用已部署的 HTTPS 網域。</p>
           </form>
 
           <aside className="whatsapp-preview-panel" aria-label="卡片內容預覽">
